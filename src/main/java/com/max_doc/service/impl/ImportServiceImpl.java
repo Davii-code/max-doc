@@ -1,9 +1,13 @@
 package com.max_doc.service.impl;
 
+import com.max_doc.Enum.ImportStatus;
 import com.max_doc.Enum.Stage;
 import com.max_doc.dto.DocumentDTO;
 import com.max_doc.entities.Document;
+import com.max_doc.entities.Import;
+import com.max_doc.exceptions.DocumentValidationException;
 import com.max_doc.repository.DocumentRepository;
+import com.max_doc.repository.ImportRepository;
 import com.max_doc.service.DocumentService;
 import com.max_doc.service.ImportService;
 import org.apache.commons.csv.CSVFormat;
@@ -24,16 +28,23 @@ import java.util.UUID;
 public class ImportServiceImpl implements ImportService {
 
     private final DocumentRepository documentRepository;
+    private final DocumentService documentService;
+    private final ImportRepository importRepository; // Repositório para a entidade Import
 
     @Autowired
-    private DocumentService documentService;
-    @Autowired
-    public ImportServiceImpl(DocumentRepository documentRepository) {
+    public ImportServiceImpl(DocumentRepository documentRepository, DocumentService documentService, ImportRepository importRepository) {
         this.documentRepository = documentRepository;
+        this.documentService = documentService;
+        this.importRepository = importRepository;
     }
 
-    // Método de importação, agora usando o DTO.
+    @Override
     public void importDocuments(MultipartFile file) {
+        Import importEntity = new Import();
+        importEntity.setFileName(file.getOriginalFilename());
+        importEntity.setStatus(ImportStatus.EM_ANDAMENTO);
+        importRepository.save(importEntity);
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader());
 
@@ -45,74 +56,66 @@ public class ImportServiceImpl implements ImportService {
             }
 
             saveDocuments(documentDTOList);
+
+            importEntity.setStatus(ImportStatus.CONCLUIDO);
         } catch (IOException e) {
-            throw new RuntimeException("Error reading the CSV file.", e);
+            importEntity.setStatus(ImportStatus.ERRO);
+            importEntity.setErrors("Error reading the CSV file: " + e.getMessage());
+        } finally {
+            importEntity.setEndDate(java.time.LocalDateTime.now());
+            importRepository.save(importEntity);
         }
     }
 
-    // Método para converter de CSV para o DTO
     private DocumentDTO parseDocumentFromCsv(CSVRecord record) {
-        DocumentDTO documentDTO = new DocumentDTO();
-        try {
-            String title = record.get("Título");
-            String description = record.get("Descrição");
-            String versionStr = record.get("Versão");
-            String abbreviation = record.get("Sigla");
+        String title = record.get("Título");
+        String description = record.get("Descrição");
+        String versionStr = record.get("Versão");
+        String abbreviation = record.get("Sigla");
 
-            // Validando os campos obrigatórios
-            if (title == null || title.isEmpty()) {
-                throw new IllegalArgumentException("Title is missing in CSV.");
-            }
-            if (description == null || description.isEmpty()) {
-                throw new IllegalArgumentException("Description is missing in CSV.");
-            }
-            if (versionStr == null || versionStr.isEmpty()) {
-                throw new IllegalArgumentException("Version is missing in CSV.");
-            }
-            if (abbreviation == null || abbreviation.isEmpty()) {
-                throw new IllegalArgumentException("Abbreviation is missing in CSV.");
-            }
-
-            // Atribuindo os valores ao DTO
-            documentDTO.setTitulo(title);
-            documentDTO.setDescricao(description);
-
-            // Validando a versão
-            try {
-                documentDTO.setVersao(Integer.parseInt(versionStr));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid version format: " + versionStr);
-            }
-
-            documentDTO.setSigla(abbreviation);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Error parsing CSV line: " + record.toString(), e);
+        if (title == null || title.isEmpty()) {
+            throw new DocumentValidationException("Title is missing in CSV.");
         }
+        if (description == null || description.isEmpty()) {
+            throw new DocumentValidationException("Description is missing in CSV.");
+        }
+        if (versionStr == null || versionStr.isEmpty()) {
+            throw new DocumentValidationException("Version is missing in CSV.");
+        }
+        if (abbreviation == null || abbreviation.isEmpty()) {
+            throw new DocumentValidationException("Abbreviation is missing in CSV.");
+        }
+
+        int version;
+        try {
+            version = Integer.parseInt(versionStr);
+        } catch (NumberFormatException e) {
+            throw new DocumentValidationException("Invalid version format: " + versionStr);
+        }
+
+        DocumentDTO documentDTO = new DocumentDTO();
+        documentDTO.setTitulo(title);
+        documentDTO.setDescricao(description);
+        documentDTO.setVersao(version);
+        documentDTO.setSigla(abbreviation);
+
         return documentDTO;
     }
 
-    // Método para salvar a lista de documentos no banco de dados
     private void saveDocuments(List<DocumentDTO> documentDTOList) {
         for (DocumentDTO documentDTO : documentDTOList) {
-            Document document = createDocument(documentDTO);
+            if (documentRepository.existsByAbbreviationAndVersion(documentDTO.getSigla(), documentDTO.getVersao())) {
+                throw new DocumentValidationException("The combination of 'Abbreviation' and 'Version' must be unique.");
+            }
+
+            Document document = new Document();
+            document.setTitle(documentDTO.getTitulo());
+            document.setDescription(documentDTO.getDescricao());
+            document.setVersion(documentDTO.getVersao());
+            document.setAbbreviation(documentDTO.getSigla());
+            document.setStage(Stage.MINUTA);
 
             documentService.createDocument(document);
         }
-    }
-
-    // Método que cria o Document a partir do DTO
-    private Document createDocument(DocumentDTO documentDTO) {
-        if (documentRepository.existsByAbbreviationAndVersion(documentDTO.getSigla(), documentDTO.getVersao())) {
-            throw new IllegalArgumentException("The combination of 'Abbreviation' and 'Version' must be unique.");
-        }
-
-        Document document = new Document();
-        document.setTitle(documentDTO.getTitulo());
-        document.setDescription(documentDTO.getDescricao());
-        document.setVersion(documentDTO.getVersao());
-        document.setAbbreviation(documentDTO.getSigla());
-        document.setStage(Stage.MINUTA);
-
-        return document;
     }
 }
