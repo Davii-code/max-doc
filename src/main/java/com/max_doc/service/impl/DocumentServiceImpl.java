@@ -104,7 +104,9 @@ public class DocumentServiceImpl implements DocumentService {
             newVersion.setDescription(existingDocument.getDescription());
             newVersion.setAbbreviation(existingDocument.getAbbreviation());
             newVersion.setVersion(existingDocument.getVersion() + 1);
+            newVersion.setId(generateDocumentId(existingDocument.getAbbreviation(), existingDocument.getVersion()+1));
             newVersion.setStage(Stage.MINUTA);
+            obsoleteDocument(existingDocument.getId());
             return documentRepository.save(newVersion);
         } else {
             throw new IllegalArgumentException("Only Vigent documents can have a new version created.");
