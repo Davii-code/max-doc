@@ -1,10 +1,8 @@
 package com.max_doc.controller;
-import com.max_doc.Enum.Stage;
 import com.max_doc.entities.Document;
 import com.max_doc.repository.DocumentRepository;
 import com.max_doc.service.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,65 +13,44 @@ import java.util.List;
 public class DocumentController {
 
     @Autowired
-    private DocumentRepository documentRepository;
+    private DocumentService documentService;
 
     @Autowired
-    private DocumentService documentService;
+    private DocumentRepository documentRepository;
 
     @GetMapping
     public List<Document> getAllDocuments() {
-        return documentRepository.findAll();
+        return documentService.getAllDocuments();
     }
 
     @PostMapping
     public ResponseEntity<Document> createDocument(@RequestBody Document document) {
-        if (documentRepository.existsByAbbreviationAndVersion(document.getAbbreviation(), document.getVersion())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-        documentService.createDocument(document);
-        return ResponseEntity.status(HttpStatus.CREATED).body(document);
+        Document createdDocument = documentService.createDocument(document);
+        return ResponseEntity.status(201).body(createdDocument);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Document> updateDocument(@PathVariable String id, @RequestBody Document document) {
-        Document existingDocument = documentRepository.findById(id).orElse(null);
-        if (existingDocument == null) {
-            return ResponseEntity.notFound().build();
-        }
-        if (!existingDocument.getStage().equals(Stage.MINUTA)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-        documentService.updateDocument(document);
-        return ResponseEntity.ok(document);
+        Document updatedDocument = documentService.updateDocument(document);
+        return ResponseEntity.ok(updatedDocument);
     }
 
     @PostMapping("/{id}/submit")
     public ResponseEntity<Document> submitDocument(@PathVariable String id) {
-        Document document = documentRepository.findById(id).orElse(null);
-        if (document == null || !document.getStage().equals(Stage.MINUTA)) {
-            return ResponseEntity.badRequest().build();
-        }
         documentService.submitDocument(id);
-        return ResponseEntity.ok(document);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/obsolete")
     public ResponseEntity<Document> obsoleteDocument(@PathVariable String id) {
-        Document document = documentRepository.findById(id).orElse(null);
-        if (document == null || !document.getStage().equals(Stage.VIGENTE)) {
-            return ResponseEntity.badRequest().build();
-        }
         documentService.obsoleteDocument(id);
-        return ResponseEntity.ok(document);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/newVersion")
     public ResponseEntity<Document> createNewVersion(@PathVariable String id) {
         Document document = documentRepository.findById(id).orElse(null);
-        if (document == null || !document.getStage().equals(Stage.VIGENTE)) {
-            return ResponseEntity.badRequest().build();
-        }
         Document newVersion = documentService.createNewVersion(document);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newVersion);
+        return ResponseEntity.status(201).body(newVersion);
     }
 }
