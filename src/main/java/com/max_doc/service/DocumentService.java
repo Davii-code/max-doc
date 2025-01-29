@@ -10,4 +10,6 @@ public interface DocumentService {
     void obsoleteDocument(String id);
     Document createNewVersion(Document existingDocument);
     List<Document> getAllDocuments();
+    Document getDocumentById(String id);
+    void deleteDocument(String id);
 }

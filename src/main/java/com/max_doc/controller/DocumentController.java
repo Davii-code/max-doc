@@ -3,6 +3,7 @@ import com.max_doc.entities.Document;
 import com.max_doc.repository.DocumentRepository;
 import com.max_doc.service.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,12 @@ public class DocumentController {
     @GetMapping
     public List<Document> getAllDocuments() {
         return documentService.getAllDocuments();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable String id) {
+        documentService.deleteDocument(id);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @PostMapping

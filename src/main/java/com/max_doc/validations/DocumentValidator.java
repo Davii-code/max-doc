@@ -56,4 +56,10 @@ public class DocumentValidator {
             throw new DocumentValidationException("Only Vigent documents can have a new version created.");
         }
     }
+
+    public void validateDelete(Document existingDocument) {
+        if (!existingDocument.getStage().equals(Stage.MINUTA)) {
+            throw new DocumentValidationException("Only Vigent documents can have a new version created.");
+        }
+    }
 }

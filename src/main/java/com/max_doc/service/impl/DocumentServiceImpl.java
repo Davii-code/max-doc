@@ -90,9 +90,15 @@ public class DocumentServiceImpl implements DocumentService {
         return documentRepository.findAll();
     }
 
-    private Document getDocumentById(String id) {
+    public Document getDocumentById(String id) {
         return documentRepository.findById(id)
                 .orElseThrow(() -> new DocumentValidationException("Document not found."));
+    }
+
+    public void deleteDocument(String id) {
+       Document document = getDocumentById(id);
+        documentValidator.validateDelete(document);
+        documentRepository.deleteById(id);
     }
 
     private String generateDocumentId(String abbreviation, Integer version) {
