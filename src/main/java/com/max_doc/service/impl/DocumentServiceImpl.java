@@ -3,9 +3,11 @@ import com.max_doc.Enum.Stage;
 import com.max_doc.entities.Document;
 import com.max_doc.repository.DocumentRepository;
 import com.max_doc.service.DocumentService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,15 +22,25 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional
     public Document createDocument(Document document) {
-        // Regra: A combinação de "Sigla" + "Versão" deve ser única.
         if (documentRepository.existsByAbbreviationAndVersion(document.getAbbreviation(), document.getVersion())) {
             throw new IllegalArgumentException("The combination of 'Abbreviation' and 'Version' must be unique.");
         }
 
-        // Regra: Quando um documento é criado, ele vai para a fase Minuta.
+        String id = generateDocumentId(document.getAbbreviation(), document.getVersion());
+        document.setId(id);
+
         document.setStage(Stage.MINUTA);
+        document.setCreationDate(LocalDateTime.now());
+        document.setUpdateDate(LocalDateTime.now());
+
         return documentRepository.save(document);
+    }
+
+
+    private String generateDocumentId(String abbreviation, Integer version) {
+        return abbreviation + "-" + version;
     }
 
     @Override
