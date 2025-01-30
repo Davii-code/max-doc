@@ -1,16 +1,22 @@
 package com.max_doc.controller;
+import com.max_doc.Enum.Stage;
 import com.max_doc.entities.Document;
+import com.max_doc.exceptions.DocumentValidationException;
 import com.max_doc.repository.DocumentRepository;
 import com.max_doc.service.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
 @RequestMapping("${api.version}/documents")
+@CrossOrigin()
 public class DocumentController {
 
     @Autowired
@@ -59,5 +65,29 @@ public class DocumentController {
         Document document = documentRepository.findById(id).orElse(null);
         Document newVersion = documentService.createNewVersion(document);
         return ResponseEntity.status(201).body(newVersion);
+    }
+
+    @PostMapping("/export")
+    public ResponseEntity<byte[]> exportDocuments(@RequestBody List<String> documentIds) {
+        try {
+            byte[] csvBytes = documentService.exportSelectedDocumentsToCSV(documentIds);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=documents.csv")
+                    .contentType(MediaType.parseMediaType("text/csv"))
+                    .body(csvBytes);
+        } catch (DocumentValidationException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(("Error generating CSV: " + e.getMessage()).getBytes());
+        }
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<List<Document>> filterDocuments(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String abbreviation,
+            @RequestParam(required = false) Stage stage) {
+            return ResponseEntity.ok(documentService.filterDocuments(title, description, abbreviation, stage));
     }
 }

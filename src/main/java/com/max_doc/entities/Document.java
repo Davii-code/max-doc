@@ -1,5 +1,6 @@
 package com.max_doc.entities;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.max_doc.Enum.Stage;
 import jakarta.persistence.*;
 
@@ -17,7 +18,7 @@ public class Document {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 5000)
     private String description;
 
     @Column(nullable = false)

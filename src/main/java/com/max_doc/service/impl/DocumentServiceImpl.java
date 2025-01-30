@@ -7,10 +7,16 @@ import com.max_doc.repository.DocumentRepository;
 import com.max_doc.service.DocumentService;
 import com.max_doc.validations.DocumentValidator;
 import jakarta.transaction.Transactional;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -86,6 +92,29 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    public byte[] exportSelectedDocumentsToCSV(List<String> documentIds)  {
+        documentValidator.validateExistingIds(documentIds);
+        List<Document> documents = documentRepository.findAllById(documentIds);
+
+        StringBuilder csvContent = new StringBuilder();
+        csvContent.append("ID,Título,Descrição,Status,Data de Criação,Data de Atualização\n");
+
+        for (Document doc : documents) {
+            csvContent.append(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                    doc.getId(),
+                    doc.getTitle(),
+                    doc.getDescription(),
+                    doc.getStage(),
+                    doc.getCreationDate(),
+                    doc.getUpdateDate()
+            ));
+        }
+
+        return csvContent.toString().getBytes();
+    }
+
+
+    @Override
     public List<Document> getAllDocuments() {
         return documentRepository.findAll();
     }
@@ -103,5 +132,26 @@ public class DocumentServiceImpl implements DocumentService {
 
     private String generateDocumentId(String abbreviation, Integer version) {
         return abbreviation + "-" + version;
+    }
+
+    public List<Document> filterDocuments(String title, String description, String abbreviation, Stage stage) {
+        List<Document> documents = documentRepository.findAll();
+
+        if (documents == null || documents.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Document> filteredDocs = new ArrayList<>();
+        for (Document doc : documents) {
+            if ((doc.getTitle() != null && doc.getTitle().equals(title)) ||
+                    (doc.getDescription() != null && doc.getDescription().equals(description)) ||
+                    (doc.getAbbreviation() != null && doc.getAbbreviation().equals(abbreviation)) ||
+                    (doc.getStage() != null && doc.getStage().equals(stage)) ||
+                    ((title == "" && description == "" && abbreviation == "") || doc.getStage().equals(stage)
+                    )) {
+                filteredDocs.add(doc);
+            }
+        }
+        return filteredDocs;
     }
 }
