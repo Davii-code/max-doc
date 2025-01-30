@@ -12,7 +12,7 @@ public interface DocumentService {
     void submitDocument(String id);
     void obsoleteDocument(String id);
     Document createNewVersion(Document existingDocument);
-    List<Document> getAllDocuments();
+    List<Document> getAllDocuments(String orderBy, String direction);
     Document getDocumentById(String id);
     void deleteDocument(String id);
     byte[] exportSelectedDocumentsToCSV(List<String> documentIds) ;

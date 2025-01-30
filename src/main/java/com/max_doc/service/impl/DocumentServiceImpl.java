@@ -7,13 +7,10 @@ import com.max_doc.repository.DocumentRepository;
 import com.max_doc.service.DocumentService;
 import com.max_doc.validations.DocumentValidator;
 import jakarta.transaction.Transactional;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.StringWriter;
+import org.springframework.data.domain.Sort;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -115,8 +112,9 @@ public class DocumentServiceImpl implements DocumentService {
 
 
     @Override
-    public List<Document> getAllDocuments() {
-        return documentRepository.findAll();
+    public List<Document> getAllDocuments(String orderBy, String direction) {
+        Sort sort = Sort.by(Sort.Order.by(orderBy).with(Sort.Direction.fromString(direction)));
+        return documentRepository.findAll(sort);
     }
 
     public Document getDocumentById(String id) {

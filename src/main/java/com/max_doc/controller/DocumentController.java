@@ -26,8 +26,9 @@ public class DocumentController {
     private DocumentRepository documentRepository;
 
     @GetMapping
-    public List<Document> getAllDocuments() {
-        return documentService.getAllDocuments();
+    public List<Document> getAllDocuments(@RequestParam(value = "orderBy", defaultValue = "dataUpdate") String orderBy,
+                                          @RequestParam(value = "direction", defaultValue = "desc") String direction) {
+        return documentService.getAllDocuments(orderBy, direction);
     }
 
     @DeleteMapping("/{id}")
