@@ -29,7 +29,7 @@ public class ImportServiceImpl implements ImportService {
 
     private final DocumentRepository documentRepository;
     private final DocumentService documentService;
-    private final ImportRepository importRepository; // Repositório para a entidade Import
+    private final ImportRepository importRepository;
 
     @Autowired
     public ImportServiceImpl(DocumentRepository documentRepository, DocumentService documentService, ImportRepository importRepository) {
@@ -60,7 +60,7 @@ public class ImportServiceImpl implements ImportService {
             importEntity.setStatus(ImportStatus.CONCLUIDO);
         } catch (IOException e) {
             importEntity.setStatus(ImportStatus.ERRO);
-            importEntity.setErrors("Error reading the CSV file: " + e.getMessage());
+            importEntity.setErrors("Erro com o CSV: " + e.getMessage());
         } finally {
             importEntity.setEndDate(java.time.LocalDateTime.now());
             importRepository.save(importEntity);
@@ -74,23 +74,23 @@ public class ImportServiceImpl implements ImportService {
         String abbreviation = record.get("Sigla");
 
         if (title == null || title.isEmpty()) {
-            throw new DocumentValidationException("Title is missing in CSV.");
+            throw new DocumentValidationException("O título está ausente no CSV.");
         }
         if (description == null || description.isEmpty()) {
-            throw new DocumentValidationException("Description is missing in CSV.");
+            throw new DocumentValidationException("A descrição está ausente no CSV.");
         }
         if (versionStr == null || versionStr.isEmpty()) {
-            throw new DocumentValidationException("Version is missing in CSV.");
+            throw new DocumentValidationException("A versão está ausente no CSV.");
         }
         if (abbreviation == null || abbreviation.isEmpty()) {
-            throw new DocumentValidationException("Abbreviation is missing in CSV.");
+            throw new DocumentValidationException("A sigla está ausente no CSV.");
         }
 
         int version;
         try {
             version = Integer.parseInt(versionStr);
         } catch (NumberFormatException e) {
-            throw new DocumentValidationException("Invalid version format: " + versionStr);
+            throw new DocumentValidationException("Formato de versão inválido: " + versionStr);
         }
 
         DocumentDTO documentDTO = new DocumentDTO();
@@ -105,7 +105,7 @@ public class ImportServiceImpl implements ImportService {
     private void saveDocuments(List<DocumentDTO> documentDTOList) {
         for (DocumentDTO documentDTO : documentDTOList) {
             if (documentRepository.existsByAbbreviationAndVersion(documentDTO.getSigla(), documentDTO.getVersao())) {
-                throw new DocumentValidationException("The combination of 'Abbreviation' and 'Version' must be unique.");
+                throw new DocumentValidationException("A combinação de 'Sigla' e 'Versão' deve ser única.");
             }
 
             Document document = new Document();
