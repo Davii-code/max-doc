@@ -27,17 +27,17 @@ public class ImportController {
     public ResponseEntity<Map<String, String>> uploadCsvFile(@RequestParam("file") MultipartFile file) {
         if (file == null || file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Empty file is not allowed."));
+                    .body(Map.of("message", "Arquivo vazio não é permitido."));
         }
 
         try {
             importService.importDocuments(file);
-            return ResponseEntity.ok(Map.of("message", "File uploaded and import process started."));
+            return ResponseEntity.ok(Map.of("message", "Upload feito com sucesso"));
         } catch (DocumentValidationException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Error during file import: " + e.getMessage()));
+                    .body(Map.of("message", "Erro ao importa: " + e.getMessage()));
         }
     }
 }

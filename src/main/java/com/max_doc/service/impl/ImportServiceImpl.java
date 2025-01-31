@@ -14,6 +14,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,6 +39,7 @@ public class ImportServiceImpl implements ImportService {
         this.importRepository = importRepository;
     }
 
+    @Async
     @Override
     public void importDocuments(MultipartFile file) {
         Import importEntity = new Import();
