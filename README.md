@@ -54,7 +54,7 @@ Como Executar
 
 Clone o repositório:
 
-git clone https://github.com/seuusuario/gerenciador-documentos.git
+git clone 
 
 Acesse a pasta do projeto:
 
